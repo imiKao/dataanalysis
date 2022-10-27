@@ -1,0 +1,145 @@
+---
+title: "case_study_divvy_bike_trip"
+author: "Aidan Kao"
+date: "10/26/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Load packages
+
+```{r load packages}
+library(tidyverse)
+library(lubridate)
+```
+
+## Load datasets
+```{r load datasets}
+df_202110 <- read_csv('dataset/202110-tripdata.csv')
+df_202111 <- read_csv('dataset/202111-tripdata.csv')
+df_202112 <- read_csv('dataset/202112-tripdata.csv')
+df_202201 <- read_csv('dataset/202201-tripdata.csv')
+df_202202 <- read_csv('dataset/202202-tripdata.csv')
+df_202203 <- read_csv('dataset/202203-tripdata.csv')
+df_202204 <- read_csv('dataset/202204-tripdata.csv')
+df_202205 <- read_csv('dataset/202205-tripdata.csv')
+df_202206 <- read_csv('dataset/202206-tripdata.csv')
+df_202207 <- read_csv('dataset/202207-tripdata.csv')
+df_202208 <- read_csv('dataset/202208-tripdata.csv')
+df_202209 <- read_csv('dataset/202209-tripdata.csv')
+all_trips <- bind_rows(df_202110,df_202111,df_202112,df_202201,df_202202,df_202203,df_202204,df_202205,df_202206,df_202207,df_202208,df_202209)
+```
+
+
+```{r describe dataset}
+head(all_trips)
+str(all_trips)
+```
+
+```{r inspection}
+print("List of column names:")
+colnames(all_trips)
+
+print("How many rows are in data frame?")
+nrow(all_trips)
+
+print("Dimensions of the data frame?")
+dim(all_trips)
+
+print("Statistical summary of data.")
+summary(all_trips)
+```
+
+#### 小結：
+- 自2021/10到2022/9共12個月的資料共5,828,235筆，共15個column，其中包含新增的ride_length(騎乘時間)與day_of_week(星期幾)
+- Column中包含部分應可以清除的feature，如ride_id
+
+```{r check class features unique}
+# 檢查class unique value
+print("Unique key (member_casual):")
+unique(as.vector(as.matrix(all_trips$member_casual)))
+print("-----------------------------------------------")
+print("Unique key (rideable_type):")
+unique(as.vector(as.matrix(all_trips$rideable_type)))
+print("-----------------------------------------------")
+print("Amount of unique key (start_station_name):")
+length(unique(as.vector(as.matrix(all_trips$start_station_name))))
+print("-----------------------------------------------")
+print("Amount of unique key (end_station_name):")
+length(unique(as.vector(as.matrix(all_trips$end_station_name))))
+```
+
+#### 小結：
+- 主要乘客分類為member(會員)與casual(休閒，意指分散客戶)，此特徵由於切合分析的題目：「比較會員與一般用戶的差異？」，後續可著重分析
+- bike的類別包含電動車、dock租借車(如同youbike)，以及一般車
+- 站名數量共約1600上下，包含起始與抵達站
+
+
+## Data Processing
+```{r data processing}
+# drop ride id
+all_trips$ride_id <- NULL
+```
+
+#### 小結：
+- 因為ride_id為用戶個人編號，無直接與分析問題相關，故暫時刪除
+
+
+## Data Analysis
+
+### Calculate the mean and the max of ride_length
+
+```{r the mean and max of ride_length}
+all_trips %>% summarize(mean_ride_len=seconds_to_period(mean(as.difftime(ride_length, format="%H:%M:%S", units="minutes"), na.rm=TRUE)), max_ride_len=seconds_to_period(max(as.difftime(ride_length, format="%H:%M:%S", units="minutes"), na.rm=TRUE)))
+```
+
+#### 小結:
+- 平均騎乘時間為16分46秒，但最大騎乘時間為23小時59分，後續可比較box-whisker plot確認是否為outlier
+
+### Calculate the mode of day_of_week
+
+```{r the mode of day_of_week}
+ggplot(data = all_trips, aes(x=day_of_week, fill=member_casual)) +
+  geom_bar(stat = "count")
+```
+
+#### 小結：
+- 在day of week中可發現星期天騎乘次數最多，casual用戶也同樣在星期天次數最多，會員則在星期三到星期五使用量最多
+
+
+```{r avg ride_length vs day_of_week}
+ggplot(data = all_trips, aes(x=day_of_week, y=as.difftime(ride_length, format="%H:%M:%S", units="seconds"), fill=member_casual)) + 
+  geom_bar(position = "dodge", stat = "summary", fun.y = "mean")
+```
+
+#### 小結：
+- 觀察普遍會員平均騎乘時間較casual用戶短，但每天趨勢差不多，推測可能為通勤或固定路線
+
+## Wide period of time range
+
+觀察時間週期較短的結果後，繼續往週期較長的範圍進行分析
+
+```{r add month}
+all_trips$date <- as.Date(all_trips$started_at)
+all_trips$month <- format(as.Date(all_trips$date), "%m")
+```
+
+```{r the mode of month}
+ggplot(data = all_trips, aes(x=month, fill=member_casual)) +
+  geom_bar(stat = "count")
+```
+
+```{r avg ride_length vs month}
+ggplot(data = all_trips, aes(x=month, y=as.difftime(ride_length, format="%H:%M:%S", units="seconds"), fill=member_casual)) + 
+  geom_bar(position = "dodge", stat = "summary", fun.y = "mean")
+```
+
+#### 小結：
+- 以月份進行比較發現，騎乘次數在每年5~10月為最多，此時約莫落在春末與夏季期間；平均騎乘時間則較無大的變動
+
+
+
+
+
+
