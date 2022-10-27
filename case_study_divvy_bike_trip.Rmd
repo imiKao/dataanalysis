@@ -139,7 +139,21 @@ ggplot(data = all_trips, aes(x=month, y=as.difftime(ride_length, format="%H:%M:%
 - 以月份進行比較發現，騎乘次數在每年5~10月為最多，此時約莫落在春末與夏季期間；平均騎乘時間則較無大的變動
 
 
+```{r boxplot}
+all_trips$ride_length_s <- as.numeric(hms(all_trips$ride_length))
+all_trips <- all_trips %>% filter(ride_length_s <= 2000)
+ggplot(data = all_trips, aes(x=member_casual, y=ride_length_s, fill=member_casual)) + 
+  geom_boxplot(stat = "boxplot")
+```
 
+#### 小結：
+- 比較會員與一般用戶的boxplot，會員騎乘時間中位數落在約500秒(8分鐘)，且前75%的騎乘時間不會超過1000秒(約16分鐘)，相較一般用戶來說騎乘時間皆較短，再搭配前面的月平均騎乘與星期平均騎乘可發現會購買會員的多半有穩定的騎乘需求，但騎乘時間不一定長。
+
+### 總結
+- 根據上述分析，比較member與casual用戶在哪些地方有何不同，可得知
+  1. member使用次數明顯較casual高，尤其在工作天（星期三到星期五），但平均騎乘時間較casual用戶短
+  2. 以長期月趨勢圖來看，member用戶也相對使用較為穩定，casual用戶則在夏天與冬天使用次數差距較member會員高，且各月的平均騎乘時間也較為不穩定
+  3. 可推估此數據在member會員與casual用戶使用此bike服務的目的應不同，仍需進一步分析其他因子來找尋中casual與member較為相似的一群，作為潛在會員進行突破
 
 
 
